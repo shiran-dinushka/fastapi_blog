@@ -18,7 +18,7 @@ uv run fastapi dev main.py
 
 Open <http://127.0.0.1:8000> for the blog. The interactive API documentation is at <http://127.0.0.1:8000/docs>.
 
-The application uses the async SQLite URL `sqlite+aiosqlite:///./blog.db`, so it opens `blog.db` in the current working directory. `main.py` defines a lifespan handler that creates missing tables with SQLAlchemy's `Base.metadata.create_all()`; this does not migrate existing tables when model definitions change. To have that handler run, the FastAPI app must be constructed with it (for example, `app = FastAPI(lifespan=lifespan)`).
+The application uses the async SQLite URL `sqlite+aiosqlite:///./blog.db`, so it opens `blog.db` in the current working directory. `main.py` defines a lifespan handler to create missing tables with SQLAlchemy's `Base.metadata.create_all()`, but the current `FastAPI()` instance does not register that handler. As a result, tables are not automatically created on startup; register it with `FastAPI(lifespan=lifespan)` to enable initialization. `create_all()` creates missing tables but does not migrate existing ones when models change.
 
 ## HTML pages
 
@@ -36,13 +36,13 @@ The app serves assets from `static/` at `/static` and uploaded or user media fro
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Create a user with a username and email |
-| `GET` | `/api/user/{user_id}` | Get one user |
+| `GET` | `/api/users/{user_id}` | Get one user |
 | `GET` | `/api/users/{user_id}/posts` | Get a user's posts |
 | `PATCH` | `/api/users/{user_id}` | Update a user's username, email, or image filename |
 | `DELETE` | `/api/users/{user_id}` | Delete a user and their posts |
 | `GET` | `/api/posts` | Get all posts |
-| `GET` | `/api/post/{post_id}` | Get one post |
-| `POST` | `/api/post` | Create a post for an existing user |
+| `GET` | `/api/posts/{post_id}` | Get one post |
+| `POST` | `/api/posts` | Create a post for an existing user |
 | `PUT` | `/api/posts/{post_id}` | Replace a post's title, content, and author |
 | `PATCH` | `/api/posts/{post_id}` | Update a post's title or content |
 | `DELETE` | `/api/posts/{post_id}` | Delete a post |
@@ -79,6 +79,7 @@ API requests with invalid input receive a `422` JSON response. Missing users or 
 ```text
 fastapi_blog/
 ├── main.py           # FastAPI app, HTML routes, and JSON API
+├── routers/          # User and post API route modules
 ├── models.py         # SQLAlchemy User and Post models
 ├── schemas.py        # Pydantic request and response schemas
 ├── database.py       # SQLite engine and session dependency
