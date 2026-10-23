@@ -18,7 +18,7 @@ uv run fastapi dev main.py
 
 Open <http://127.0.0.1:8000> for the blog. The interactive API documentation is at <http://127.0.0.1:8000/docs>.
 
-The application uses `sqlite:///./blog.db`, so SQLite creates or opens `blog.db` in the current working directory. Tables are created at startup with SQLAlchemy's `Base.metadata.create_all()`. This creates missing tables; it does not migrate existing tables when model definitions change.
+The application uses the async SQLite URL `sqlite+aiosqlite:///./blog.db`, so it opens `blog.db` in the current working directory. `main.py` defines a lifespan handler that creates missing tables with SQLAlchemy's `Base.metadata.create_all()`; this does not migrate existing tables when model definitions change. To have that handler run, the FastAPI app must be constructed with it (for example, `app = FastAPI(lifespan=lifespan)`).
 
 ## HTML pages
 
@@ -38,9 +38,14 @@ The app serves assets from `static/` at `/static` and uploaded or user media fro
 | `POST` | `/api/users` | Create a user with a username and email |
 | `GET` | `/api/user/{user_id}` | Get one user |
 | `GET` | `/api/users/{user_id}/posts` | Get a user's posts |
+| `PATCH` | `/api/users/{user_id}` | Update a user's username, email, or image filename |
+| `DELETE` | `/api/users/{user_id}` | Delete a user and their posts |
 | `GET` | `/api/posts` | Get all posts |
 | `GET` | `/api/post/{post_id}` | Get one post |
 | `POST` | `/api/post` | Create a post for an existing user |
+| `PUT` | `/api/posts/{post_id}` | Replace a post's title, content, and author |
+| `PATCH` | `/api/posts/{post_id}` | Update a post's title or content |
+| `DELETE` | `/api/posts/{post_id}` | Delete a post |
 
 Example user request:
 
@@ -61,11 +66,11 @@ Example post request:
 }
 ```
 
-API requests with invalid input receive a `422` JSON response. Missing users or posts receive `404`; duplicate usernames or email addresses receive `400` when creating a user.
+API requests with invalid input receive a `422` JSON response. Missing users or posts receive `404`; duplicate usernames or email addresses receive `400` when creating or updating a user. Successful create requests return `201`; delete requests return `204`.
 
 ## Data model
 
-- A user has a unique username and email, and may have an optional profile image filename.
+- A user has a unique username and email, and may have an optional profile image filename. This project does not implement passwords, authentication, or authorization.
 - A post has a title, content, posting date, and a required author (`user_id`).
 - Posts are stored in SQLite and remain across application restarts.
 
